@@ -1,37 +1,37 @@
 const fs = require("fs");
-const fetch = require("node-fetch");
+const puppeteer = require("puppeteer");
 
 async function scrapeSET() {
-  try {
-    const url = "https://marketplace.set.or.th/api/public/oaq-data/index-stat";
-    const params = "?tradeDate=2025-09-02";  // Example date
+  const browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
 
-    const res = await fetch(`${url}${params}`, {
-      headers: {
-        "api-key": process.env.SET_API_KEY
-      }
+  try {
+    await page.goto("https://www.set.or.th/en/home", {
+      waitUntil: "networkidle2",
+      timeout: 0
     });
 
-    if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+    // SET Index value
+    await page.waitForSelector(".set-index__number"); 
+    const setIndex = await page.$eval(".set-index__number", el => el.textContent.trim());
 
-    const json = await res.json();
-    const indexData = json.indexStat.find(i => i.indexName === "SET");
+    // Market Value
+    const marketValue = await page.$eval(".set-index__value", el => el.textContent.trim());
 
     const output = {
-      indexName: indexData.indexName,
-      indexValue: indexData.indexValue,
-      change: indexData.change,
-      previousClose: indexData.previousClose,
-      value: indexData.value,
+      index: setIndex,
+      marketValue: marketValue,
       timestamp: new Date().toISOString()
     };
 
     fs.writeFileSync("data.json", JSON.stringify(output, null, 2));
-    console.log("Saved:", output);
+    console.log("✅ Scraped:", output);
 
   } catch (err) {
-    console.error("Error:", err);
+    console.error("❌ Scraping error:", err);
     process.exit(1);
+  } finally {
+    await browser.close();
   }
 }
 
