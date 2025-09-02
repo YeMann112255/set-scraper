@@ -1,11 +1,10 @@
 {
   "name": "set-scraper",
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
     "scrape": "node scrape.js"
   },
   "dependencies": {
-    "puppeteer": "^22.0.0"
+    "node-fetch": "^2.6.7"
   }
 }
