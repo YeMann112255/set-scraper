@@ -3,35 +3,34 @@ const fetch = require("node-fetch");
 
 async function scrapeSET() {
   try {
-    const url = "https://www.set.or.th/api/set/index/quotes";
-    const res = await fetch(url, {
+    const url = "https://marketplace.set.or.th/api/public/oaq-data/index-stat";
+    const params = "?tradeDate=2025-09-02";  // Example date
+
+    const res = await fetch(`${url}${params}`, {
       headers: {
-        "Accept": "application/json, text/plain, */*",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
-        "Referer": "https://www.set.or.th/"
+        "api-key": process.env.SET_API_KEY
       }
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP error ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
 
-    const data = await res.json();
+    const json = await res.json();
+    const indexData = json.indexStat.find(i => i.indexName === "SET");
 
     const output = {
-      indexName: data?.indexName,
-      last: data?.last,
-      change: data?.change,
-      percentChange: data?.percentChange,
-      marketValue: data?.marketValue,
+      indexName: indexData.indexName,
+      indexValue: indexData.indexValue,
+      change: indexData.change,
+      previousClose: indexData.previousClose,
+      value: indexData.value,
       timestamp: new Date().toISOString()
     };
 
     fs.writeFileSync("data.json", JSON.stringify(output, null, 2));
-    console.log("✅ Data saved:", output);
+    console.log("Saved:", output);
 
   } catch (err) {
-    console.error("❌ Error:", err);
+    console.error("Error:", err);
     process.exit(1);
   }
 }
