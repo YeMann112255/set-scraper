@@ -1,9 +1,9 @@
-name: Scrape SET
+name: Scrape SET (Java)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"   # hourly run
+    - cron: "0 * * * *"   # hourly
 
 jobs:
   scrape:
@@ -13,16 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
         with:
-          node-version: 18
+          java-version: '17'
+          distribution: 'temurin'
 
-      - name: Install dependencies
-        run: npm install puppeteer --unsafe-perm=true
-
-      - name: Run scraper
-        run: npm run scrape
+      - name: Build and run scraper
+        run: mvn compile exec:java
 
       - name: Commit data.json
         run: |
