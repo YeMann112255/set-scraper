@@ -4,10 +4,20 @@ const fetch = require("node-fetch");
 async function scrapeSET() {
   try {
     const url = "https://www.set.or.th/api/set/index/quotes";
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: {
+        "Accept": "application/json, text/plain, */*",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+        "Referer": "https://www.set.or.th/"
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP error ${res.status}`);
+    }
+
     const data = await res.json();
 
-    // Example: SET Index + Market Value
     const output = {
       indexName: data?.indexName,
       last: data?.last,
