@@ -1,57 +1,29 @@
-// scrape.js
-import puppeteer from "puppeteer";
-import fs from "fs";
+const fs = require("fs");
+const fetch = require("node-fetch");
 
-(async () => {
-  const browser = await puppeteer.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    headless: "new",
-  });
-  const page = await browser.newPage();
-  await page.goto("https://www.set.or.th/en/home", {
-    waitUntil: "networkidle2",
-    timeout: 60000,
-  });
+async function scrapeSET() {
+  try {
+    const url = "https://www.set.or.th/api/set/index/quotes";
+    const res = await fetch(url);
+    const data = await res.json();
 
-  const data = await page.evaluate(() => {
-    const pickNumber = (el) => {
-      if (!el) return null;
-      const m = el.textContent.replace(/\s+/g, " ")
-        .match(/[\d,]+\.\d+|\d{1,3}(?:,\d{3})+/);
-      return m ? m[0].replace(/,/g, "") : null;
+    // Example: SET Index + Market Value
+    const output = {
+      indexName: data?.indexName,
+      last: data?.last,
+      change: data?.change,
+      percentChange: data?.percentChange,
+      marketValue: data?.marketValue,
+      timestamp: new Date().toISOString()
     };
 
-    // SET index
-    const setLabel = [...document.querySelectorAll("*")]
-      .find(e => e.textContent.trim() === "SET");
-    let setIndex = null;
-    if (setLabel) {
-      const block = setLabel.closest("section,div,article") || setLabel.parentElement;
-      setIndex = pickNumber(block);
-    }
+    fs.writeFileSync("data.json", JSON.stringify(output, null, 2));
+    console.log("✅ Data saved:", output);
 
-    // Trading Value
-    const valueHdr = [...document.querySelectorAll("*")]
-      .find(e => /Total Trading Value/i.test(e.textContent));
-    let value = null;
-    if (valueHdr) {
-      const blk = valueHdr.closest("section,div,article") || valueHdr.parentElement;
-      const m = blk.textContent.match(/([\d,]+\.\d+)\s*M\.?Baht/i);
-      value = m ? m[1].replace(/,/g, "") : pickNumber(blk);
-    }
+  } catch (err) {
+    console.error("❌ Error:", err);
+    process.exit(1);
+  }
+}
 
-    const lastUpdateNode = [...document.querySelectorAll("*")]
-      .find(e => /Last Update/i.test(e.textContent));
-    const lastUpdate = lastUpdateNode ? lastUpdateNode.textContent.trim() : null;
-
-    return {
-      setIndex: setIndex ? Number(setIndex) : null,
-      totalTradingValue_MBaht: value ? Number(value) : null,
-      lastUpdate,
-      scrapedAt: new Date().toISOString(),
-    };
-  });
-
-  fs.writeFileSync("data.json", JSON.stringify(data, null, 2));
-  await browser.close();
-})();
+scrapeSET();
